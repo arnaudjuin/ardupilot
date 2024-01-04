@@ -117,15 +117,15 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
     FAST_TASK(run_custom_controller),
 #endif
-#if FRAME_CONFIG == HELI_FRAME
-    FAST_TASK(heli_update_autorotation),
-#endif //HELI_FRAME
     // send outputs to the motors library immediately
     FAST_TASK(motors_output),
      // run EKF state estimator (expensive)
     FAST_TASK(read_AHRS),
 #if FRAME_CONFIG == HELI_FRAME
     FAST_TASK(update_heli_control_dynamics),
+    #if MODE_AUTOROTATE_ENABLED == ENABLED
+    FAST_TASK(heli_update_autorotation),
+    #endif
 #endif //HELI_FRAME
     // Inertial Nav
     FAST_TASK(read_inertia),
@@ -137,15 +137,13 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     FAST_TASK(update_home_from_EKF),
     // check if we've landed or crashed
     FAST_TASK(update_land_and_crash_detectors),
-    // surface tracking update
-    FAST_TASK(update_rangefinder_terrain_offset),
 #if HAL_MOUNT_ENABLED
     // camera mount's fast update
     FAST_TASK_CLASS(AP_Mount, &copter.camera_mount, update_fast),
 #endif
     FAST_TASK(Log_Video_Stabilisation),
 
-    SCHED_TASK(rc_loop,              250,    130,  3),
+    SCHED_TASK(rc_loop,              100,    130,  3),
     SCHED_TASK(throttle_loop,         50,     75,  6),
     SCHED_TASK_CLASS(AP_GPS,               &copter.gps,                 update,          50, 200,   9),
 #if AP_OPTICALFLOW_ENABLED
@@ -165,7 +163,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_PROXIMITY_ENABLED
     SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50,  36),
 #endif
-#if AP_BEACON_ENABLED
+#if BEACON_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50,  39),
 #endif
     SCHED_TASK(update_altitude,       10,    100,  42),
@@ -174,15 +172,13 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if MODE_SMARTRTL_ENABLED == ENABLED
     SCHED_TASK_CLASS(ModeSmartRTL,         &copter.mode_smartrtl,       save_position,    3, 100,  51),
 #endif
-#if HAL_SPRAYER_ENABLED
+#if SPRAYER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AC_Sprayer,           &copter.sprayer,               update,         3,  90,  54),
 #endif
     SCHED_TASK(three_hz_loop,          3,     75, 57),
-#if AP_SERVORELAYEVENTS_ENABLED
     SCHED_TASK_CLASS(AP_ServoRelayEvents,  &copter.ServoRelayEvents,      update_events, 50,  75,  60),
-#endif
     SCHED_TASK_CLASS(AP_Baro,              &copter.barometer,             accumulate,    50,  90,  63),
-#if AC_PRECLAND_ENABLED
+#if PRECISION_LANDING == ENABLED
     SCHED_TASK(update_precland,      400,     50,  69),
 #endif
 #if FRAME_CONFIG == HELI_FRAME
@@ -191,12 +187,13 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if LOGGING_ENABLED == ENABLED
     SCHED_TASK(loop_rate_logging, LOOP_RATE,    50,  75),
 #endif
+    SCHED_TASK_CLASS(AP_Notify,            &copter.notify,              update,          50,  90,  78),
     SCHED_TASK(one_hz_loop,            1,    100,  81),
     SCHED_TASK(ekf_check,             10,     75,  84),
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
     SCHED_TASK(takeoff_check,         50,     50,  91),
-#if AP_LANDINGGEAR_ENABLED
+#if LANDING_GEAR_ENABLED == ENABLED
     SCHED_TASK(landinggear_update,    10,     75,  93),
 #endif
     SCHED_TASK(standby_update,        100,    75,  96),
@@ -206,7 +203,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75, 108),
 #endif
-#if AP_CAMERA_ENABLED
+#if CAMERA == ENABLED
     SCHED_TASK_CLASS(AP_Camera,            &copter.camera,              update,          50,  75, 111),
 #endif
 #if LOGGING_ENABLED == ENABLED
@@ -217,12 +214,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_InertialSensor,    &copter.ins,                 periodic,       400,  50, 123),
 
     SCHED_TASK_CLASS(AP_Scheduler,         &copter.scheduler,           update_logging, 0.1,  75, 126),
-#if AP_RPM_ENABLED
+#if RPM_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_RPM,               &copter.rpm_sensor,          update,          40, 200, 129),
 #endif
-#if AP_TEMPCALIBRATION_ENABLED
     SCHED_TASK_CLASS(AP_TempCalibration,   &copter.g2.temp_calibration, update,          10, 100, 135),
-#endif
 #if HAL_ADSB_ENABLED
     SCHED_TASK(avoidance_adsb_update, 10,    100, 138),
 #endif
@@ -232,10 +227,10 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #if AP_TERRAIN_AVAILABLE
     SCHED_TASK(terrain_update,        10,    100, 144),
 #endif
-#if AP_GRIPPER_ENABLED
+#if GRIPPER_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Gripper,           &copter.g2.gripper,          update,          10,  75, 147),
 #endif
-#if AP_WINCH_ENABLED
+#if WINCH_ENABLED == ENABLED
     SCHED_TASK_CLASS(AP_Winch,             &copter.g2.winch,            update,          50,  50, 150),
 #endif
 #ifdef USERHOOK_FASTLOOP
@@ -273,7 +268,6 @@ void Copter::get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
 constexpr int8_t Copter::_failsafe_priorities[7];
 
 #if AP_SCRIPTING_ENABLED
-#if MODE_GUIDED_ENABLED == ENABLED
 // start takeoff to given altitude (for use by scripting)
 bool Copter::start_takeoff(float alt)
 {
@@ -384,9 +378,7 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
     return true;
 }
-#endif
 
-#if MODE_CIRCLE_ENABLED == ENABLED
 // circle mode controls
 bool Copter::get_circle_radius(float &radius_m)
 {
@@ -399,15 +391,19 @@ bool Copter::set_circle_rate(float rate_dps)
     circle_nav->set_rate(rate_dps);
     return true;
 }
-#endif
 
 // set desired speed (m/s). Used for scripting.
 bool Copter::set_desired_speed(float speed)
 {
-    return flightmode->set_speed_xy(speed * 100.0f);
+    // exit if vehicle is not in auto mode
+    if (!flightmode->is_autopilot()) {
+        return false;
+    }
+
+    wp_nav->set_speed_xy(speed * 100.0f);
+    return true;
 }
 
-#if MODE_AUTO_ENABLED == ENABLED
 // returns true if mode supports NAV_SCRIPT_TIME mission commands
 bool Copter::nav_scripting_enable(uint8_t mode)
 {
@@ -415,13 +411,13 @@ bool Copter::nav_scripting_enable(uint8_t mode)
 }
 
 // lua scripts use this to retrieve the contents of the active command
-bool Copter::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4)
+bool Copter::nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2)
 {
     if (flightmode != &mode_auto) {
         return false;
     }
 
-    return mode_auto.nav_script_time(id, cmd, arg1, arg2, arg3, arg4);
+    return mode_auto.nav_script_time(id, cmd, arg1, arg2);
 }
 
 // lua scripts use this to indicate when they have complete the command
@@ -433,7 +429,6 @@ void Copter::nav_script_time_done(uint16_t id)
 
     return mode_auto.nav_script_time_done(id);
 }
-#endif
 
 // returns true if the EKF failsafe has triggered.  Only used by Lua scripts
 bool Copter::has_ekf_failsafed() const
@@ -443,26 +438,6 @@ bool Copter::has_ekf_failsafed() const
 
 #endif // AP_SCRIPTING_ENABLED
 
-// returns true if vehicle is landing. Only used by Lua scripts
-bool Copter::is_landing() const
-{
-    return flightmode->is_landing();
-}
-
-// returns true if vehicle is taking off. Only used by Lua scripts
-bool Copter::is_taking_off() const
-{
-    return flightmode->is_taking_off();
-}
-
-bool Copter::current_mode_requires_mission() const
-{
-#if MODE_AUTO_ENABLED == ENABLED
-        return flightmode == &mode_auto;
-#else
-        return false;
-#endif
-}
 
 // rc_loops - reads user input from transmitter/receiver
 // called at 100hz
@@ -536,7 +511,7 @@ void Copter::ten_hz_logging_loop()
     if (should_log(MASK_LOG_ATTITUDE_MED) && !should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
         Log_Write_Attitude();
     }
-    if (!should_log(MASK_LOG_ATTITUDE_FAST) && !copter.flightmode->logs_attitude()) {
+    if (!should_log(MASK_LOG_ATTITUDE_FAST)) {
     // log at 10Hz if PIDS bitmask is selected, even if no ATT bitmask is selected; logs at looprate if ATT_FAST and PIDS bitmask set
         Log_Write_PIDS();
     }
@@ -567,21 +542,16 @@ void Copter::ten_hz_logging_loop()
 #if HAL_PROXIMITY_ENABLED
         g2.proximity.log();  // Write proximity sensor distances
 #endif
-#if AP_BEACON_ENABLED
+#if BEACON_ENABLED == ENABLED
         g2.beacon.log();
 #endif
     }
 #if FRAME_CONFIG == HELI_FRAME
     Log_Write_Heli();
 #endif
-#if AP_WINCH_ENABLED
+#if WINCH_ENABLED == ENABLED
     if (should_log(MASK_LOG_ANY)) {
         g2.winch.write_log();
-    }
-#endif
-#if HAL_MOUNT_ENABLED
-    if (should_log(MASK_LOG_CAMERA)) {
-        camera_mount.write_log();
     }
 #endif
 }
@@ -603,18 +573,16 @@ void Copter::twentyfive_hz_logging()
         g2.arot.Log_Write_Autorotation();
     }
 #endif
-#if HAL_GYROFFT_ENABLED
-    if (should_log(MASK_LOG_FTN_FAST)) {
-        gyro_fft.write_log_messages();
-    }
-#endif
 }
 
-// three_hz_loop - 3hz loop
+// three_hz_loop - 3.3hz loop
 void Copter::three_hz_loop()
 {
     // check if we've lost contact with the ground station
     failsafe_gcs_check();
+
+    // check if we've lost heartbeat from the companion computer
+    failsafe_companion_check();
 
     // check if we've lost terrain data
     failsafe_terrain_check();
@@ -665,13 +633,6 @@ void Copter::one_hz_loop()
 #endif
 
     AP_Notify::flags.flying = !ap.land_complete;
-
-    // slowly update the PID notches with the average loop rate
-    attitude_control->set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-    pos_control->get_accel_z_pid().set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-#if AC_CUSTOMCONTROL_MULTI_ENABLED == ENABLED
-    custom_control.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
-#endif
 }
 
 void Copter::init_simple_bearing()
@@ -747,7 +708,7 @@ void Copter::update_super_simple_bearing(bool force_update)
 
 void Copter::read_AHRS(void)
 {
-    // we tell AHRS to skip INS update as we have already done it in FAST_TASK.
+    // we tell AHRS to skip INS update as we have already done it in fast_loop()
     ahrs.update(true);
 }
 
@@ -761,10 +722,10 @@ void Copter::update_altitude()
         Log_Write_Control_Tuning();
         if (!should_log(MASK_LOG_FTN_FAST)) {
             AP::ins().write_notch_log_messages();
-#if HAL_GYROFFT_ENABLED
-            gyro_fft.write_log_messages();
-#endif
         }
+#if HAL_GYROFFT_ENABLED
+        gyro_fft.write_log_messages();
+#endif
     }
 }
 
@@ -792,15 +753,10 @@ bool Copter::get_wp_crosstrack_error_m(float &xtrack_error) const
     return true;
 }
 
-// get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
-bool Copter::get_rate_ef_targets(Vector3f& rate_ef_targets) const
+// get the target body-frame angular velocities in rad/s (Z-axis component used by some gimbals)
+bool Copter::get_rate_bf_targets(Vector3f& rate_bf_targets) const
 {
-    // always returns zero vector if landed or disarmed
-    if (copter.ap.land_complete) {
-        rate_ef_targets.zero();
-    } else {
-        rate_ef_targets = attitude_control->get_rate_ef_targets();
-    }
+    rate_bf_targets = attitude_control->rate_bf_targets();
     return true;
 }
 

@@ -37,14 +37,9 @@ void RC_Channel_Copter::mode_switch_changed(modeswitch_pos_t new_pos)
     }
 }
 
-bool RC_Channels_Copter::in_rc_failsafe() const
-{
-    return copter.failsafe.radio;
-}
-
 bool RC_Channels_Copter::has_valid_input() const
 {
-    if (in_rc_failsafe()) {
+    if (copter.failsafe.radio) {
         return false;
     }
     if (copter.failsafe.radio_counter != 0) {
@@ -126,7 +121,6 @@ void RC_Channel_Copter::init_aux_function(const aux_func_t ch_option, const AuxS
     case AUX_FUNC::AIRMODE:
     case AUX_FUNC::FORCEFLYING:
     case AUX_FUNC::CUSTOM_CONTROLLER:
-    case AUX_FUNC::WEATHER_VANE_ENABLE:
         run_aux_function(ch_option, ch_flag, AuxFuncTriggerSource::INIT);
         break;
     default:
@@ -396,7 +390,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::PRECISION_LOITER:
-#if AC_PRECLAND_ENABLED && MODE_LOITER_ENABLED == ENABLED
+#if PRECISION_LANDING == ENABLED && MODE_LOITER_ENABLED == ENABLED
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     copter.mode_loiter.set_precision_loiter_enabled(true);
@@ -438,7 +432,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::WINCH_ENABLE:
-#if AP_WINCH_ENABLED
+#if WINCH_ENABLED == ENABLED
             switch (ch_flag) {
                 case AuxSwitchPos::HIGH:
                     // high switch position stops winch using rate control
@@ -519,7 +513,7 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
             break;
 
         case AUX_FUNC::FLOWHOLD:
-#if MODE_FLOWHOLD_ENABLED
+#if AP_OPTICALFLOW_ENABLED
             do_aux_function_change_mode(Mode::Number::FLOWHOLD, ch_flag);
 #endif
             break;
@@ -622,22 +616,6 @@ bool RC_Channel_Copter::do_aux_function(const aux_func_t ch_option, const AuxSwi
         case AUX_FUNC::CUSTOM_CONTROLLER:
             copter.custom_control.set_custom_controller(ch_flag == AuxSwitchPos::HIGH);
             break;
-#endif
-
-#if WEATHERVANE_ENABLED == ENABLED
-    case AUX_FUNC::WEATHER_VANE_ENABLE: {
-        switch (ch_flag) {
-            case AuxSwitchPos::HIGH:
-                copter.g2.weathervane.allow_weathervaning(true);
-                break;
-            case AuxSwitchPos::MIDDLE:
-                break;
-            case AuxSwitchPos::LOW:
-                copter.g2.weathervane.allow_weathervaning(false);
-                break;
-        }
-        break;
-    }
 #endif
 
     default:

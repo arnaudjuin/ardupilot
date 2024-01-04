@@ -36,9 +36,6 @@ void Copter::failsafe_radio_on_event()
         case FS_THR_ENABLED_AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_THR_ENABLED_BRAKE_OR_LAND:
-            desired_action = FailsafeAction::BRAKE_LAND;
-            break;
         default:
             desired_action = FailsafeAction::LAND;
     }
@@ -187,9 +184,6 @@ void Copter::failsafe_gcs_on_event(void)
         case FS_GCS_ENABLED_AUTO_RTL_OR_RTL:
             desired_action = FailsafeAction::AUTO_DO_LAND_START;
             break;
-        case FS_GCS_ENABLED_BRAKE_OR_LAND:
-            desired_action = FailsafeAction::BRAKE_LAND;
-            break;
         default: // if an invalid parameter value is set, the fallback is RTL
             desired_action = FailsafeAction::RTL;
     }
@@ -237,6 +231,82 @@ void Copter::failsafe_gcs_off_event(void)
 {
     gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
     AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_GCS, LogErrorCode::FAILSAFE_RESOLVED);
+}
+
+// failsafe_companion_check - check for companion computer failsafe
+void Copter::failsafe_companion_check()
+{
+    // Bypass GCS failsafe checks if disabled or GCS never connected
+    //if (g.failsafe_gcs == FS_GCS_DISABLED) { // always enable for now
+    //    return;
+    //}
+
+    const uint32_t comp_last_seen_ms = gcs().sysid_comp_last_seen_time_ms();
+    if (comp_last_seen_ms == 0) {
+        return;
+    }
+
+    // calc time since last companion HB
+    // note: this only looks at the heartbeat from the device id 196
+    const uint32_t last_comp_update_ms = millis() - comp_last_seen_ms;
+    const uint32_t comp_timeout_ms = uint32_t(constrain_float(g2.fs_companion_timeout * 1000.0f, 0.0f, UINT32_MAX));
+
+    // Determine which event to trigger
+    if (last_comp_update_ms < comp_timeout_ms && failsafe.companion) {
+        // Recovery from a COMP failsafe
+        set_failsafe_companion(false);
+        failsafe_companion_off_event();
+
+    } else if (last_comp_update_ms < comp_timeout_ms && !failsafe.companion) {
+        // No problem, do nothing
+
+    } else if (last_comp_update_ms > comp_timeout_ms && failsafe.companion) {
+        // Already in failsafe, do nothing
+
+    } else if (last_comp_update_ms > comp_timeout_ms && !failsafe.companion) {
+        // New companion failsafe event, trigger events
+        set_failsafe_companion(true);
+        failsafe_companion_on_event();
+    }
+}
+
+// failsafe_companion_on_event - actions to take when companion HB is lost
+void Copter::failsafe_companion_on_event(void)
+{
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_COMPANION, LogErrorCode::FAILSAFE_OCCURRED);
+    RC_Channels::clear_overrides();
+
+    // convert the desired failsafe response to the Failsafe_Action enum
+    FailsafeAction desired_action;
+
+    // Conditions to deviate from FS_GCS_ENABLE parameter setting
+    if (!motors->armed()) {
+        desired_action = FailsafeAction::NONE;
+    }
+    else if (g2.fs_companion_action == 0) {
+        desired_action = FailsafeAction::NONE;
+    }
+    else if (g2.fs_companion_action == 1) {
+        desired_action = FailsafeAction::LAND;
+    }
+    else if (g2.fs_companion_action == 2) {
+        desired_action = FailsafeAction::RTL;
+    }
+    else {
+        desired_action = FailsafeAction::LAND;
+    }
+    gcs().send_text(MAV_SEVERITY_WARNING, "Companion Failsafe (only triggered in guided)");
+    if (flightmode->mode_number() == Mode::Number::GUIDED) {
+      // Call the failsafe action handler
+      do_failsafe_action(desired_action, ModeReason::COMPANION_FAILSAFE);
+    }
+}
+
+// failsafe_companion_off_event - actions to take when companion HB is restored
+void Copter::failsafe_companion_off_event(void)
+{
+    gcs().send_text(MAV_SEVERITY_WARNING, "Companion Failsafe Cleared");
+    AP::logger().Write_Error(LogErrorSubsystem::FAILSAFE_COMPANION, LogErrorCode::FAILSAFE_RESOLVED);
 }
 
 // executes terrain failsafe if data is missing for longer than a few seconds
@@ -431,21 +501,6 @@ void Copter::set_mode_auto_do_land_start_or_RTL(ModeReason reason)
     set_mode_RTL_or_land_with_pause(reason);
 }
 
-// Sets mode to Brake or LAND with 4 second delay before descent starts
-// This can come from failsafe or RC option
-void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
-{
-#if MODE_BRAKE_ENABLED == ENABLED
-    if (set_mode(Mode::Number::BRAKE, reason)) {
-        AP_Notify::events.failsafe_mode_change = 1;
-        return;
-    }
-#endif
-
-    gcs().send_text(MAV_SEVERITY_WARNING, "Trying Land Mode");
-    set_mode_land_with_pause(reason);
-}
-
 bool Copter::should_disarm_on_failsafe() {
     if (ap.in_arming_delay) {
         return true;
@@ -497,12 +552,9 @@ void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
         case FailsafeAction::AUTO_DO_LAND_START:
             set_mode_auto_do_land_start_or_RTL(reason);
             break;
-        case FailsafeAction::BRAKE_LAND:
-            set_mode_brake_or_land_with_pause(reason);
-            break;
     }
 
-#if AP_GRIPPER_ENABLED
+#if GRIPPER_ENABLED == ENABLED
     if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
         copter.g2.gripper.release();
     }

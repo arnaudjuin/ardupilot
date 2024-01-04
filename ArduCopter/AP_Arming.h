@@ -16,7 +16,8 @@ public:
     }
 
     /* Do not allow copies */
-    CLASS_NO_COPY(AP_Arming_Copter);
+    AP_Arming_Copter(const AP_Arming_Copter &other) = delete;
+    AP_Arming_Copter &operator=(const AP_Arming_Copter&) = delete;
 
     bool rc_calibration_checks(bool display_failure) override;
 

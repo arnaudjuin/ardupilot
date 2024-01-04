@@ -115,18 +115,7 @@ elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
     PIP=pip3
-else
-    # We assume APT based system, so let's try with apt-cache first.
-    SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    SITLFML_VERSION=$(apt-cache search -n '^libsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    # If we cannot retrieve the number with apt-cache, try a last time with dpkg-query
-    re='^[+-]?[0-9]+([.][0-9]+)?$'
-    if ! [[ $SITLCFML_VERSION =~ $re ]] || ! [[ $SITLFML_VERSION =~ $re ]] ; then
-        # Extract the floating point number that is the version of the libcsfml package.
-        SITLCFML_VERSION=$(dpkg-query --search libcsfml-audio | cut -d":" -f1 | grep libcsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-        # And same for libsfml-audio.
-        SITLFML_VERSION=$(dpkg-query --search libsfml-audio | cut -d":" -f1 | grep libsfml-audio | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
-    fi
+
 fi
 
 # Check whether the specific ARM pkg-config package is available or whether we should emulate the effect of installing it.
