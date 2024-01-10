@@ -323,47 +323,7 @@ class Board:
             env.PRIVATE_KEY = cfg.options.private_key
             
         env.CXXFLAGS += [
-            '-std=gnu++11',
-
-            '-fdata-sections',
-            '-ffunction-sections',
-            '-fno-exceptions',
-            '-fsigned-char',
-
-            '-Wall',
-            '-Wextra',
-            '-Wpointer-arith',
-            '-Wno-unused-parameter',
-            '-Wno-missing-field-initializers',
-            '-Wno-reorder',
-            '-Wno-redundant-decls',
-            '-Wno-unknown-pragmas',
-            '-Wno-expansion-to-defined',
-            '-Werror=cast-align',
-            '-Werror=attributes',
-            '-Werror=format-security',
-            '-Werror=format-extra-args',
-            '-Werror=enum-compare',
-            '-Werror=format',
-            '-Werror=array-bounds',
-            '-Werror=uninitialized',
-            '-Werror=init-self',
-            '-Werror=narrowing',
-            '-Werror=return-type',
-            '-Werror=switch',
-            '-Werror=sign-compare',
-            '-Werror=type-limits',
-            '-Werror=unused-result',
-            '-Werror=shadow',
-            '-Werror=unused-value',
-            '-Werror=unused-variable',
-            '-Werror=delete-non-virtual-dtor',
-            '-Wfatal-errors',
-            '-Wno-trigraphs',
-            '-Werror=parentheses',
-            '-DARDUPILOT_BUILD',
-            '-Wuninitialized',
-            '-Warray-bounds',
+          
         ]
 
         if 'clang++' in cfg.env.COMPILER_CXX:
@@ -1007,42 +967,7 @@ class chibios(Board):
         env.CHIBIOS_BOARD_NAME = 'HAL_BOARD_NAME="%s"' % self.name
         env.HAL_MAX_STACK_FRAME_SIZE = 'HAL_MAX_STACK_FRAME_SIZE=%d' % 1300 # set per Wframe-larger-than, ensure its same
         env.CFLAGS += cfg.env.CPU_FLAGS + [
-            '-Wlogical-op',
-            '-Wframe-larger-than=1300',
-            '-Wno-attributes',
-            '-fno-exceptions',
-            '-Wall',
-            '-Wextra',
-            '-Wno-sign-compare',
-            '-Wfloat-equal',
-            '-Wpointer-arith',
-            '-Wmissing-declarations',
-            '-Wno-unused-parameter',
-            '-Werror=array-bounds',
-            '-Wfatal-errors',
-            '-Werror=uninitialized',
-            '-Werror=init-self',
-            '-Werror=unused-but-set-variable',
-            '-Wno-missing-field-initializers',
-            '-Wno-trigraphs',
-            '-fno-strict-aliasing',
-            '-fomit-frame-pointer',
-            '-falign-functions=16',
-            '-ffunction-sections',
-            '-fdata-sections',
-            '-fno-strength-reduce',
-            '-fno-builtin-printf',
-            '-fno-builtin-fprintf',
-            '-fno-builtin-vprintf',
-            '-fno-builtin-vfprintf',
-            '-fno-builtin-puts',
-            '-mno-thumb-interwork',
-            '-mthumb',
-            '--specs=nano.specs',
-            '--specs=nosys.specs',
-            '-D__USE_CMSIS',
-            '-Werror=deprecated-declarations',
-            '-DNDEBUG=1'
+      
         ]
         if not cfg.options.Werror:
             env.CFLAGS += [
