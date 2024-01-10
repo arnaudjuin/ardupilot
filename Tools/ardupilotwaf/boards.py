@@ -231,7 +231,6 @@ class Board:
             '-Werror=parentheses',
             '-Werror=format-extra-args',
             '-Werror=ignored-qualifiers',
-            '-Werror=undef',
             '-DARDUPILOT_BUILD',
         ]
 
@@ -354,7 +353,6 @@ class Board:
             '-Werror=switch',
             '-Werror=sign-compare',
             '-Werror=type-limits',
-            '-Werror=undef',
             '-Werror=unused-result',
             '-Werror=shadow',
             '-Werror=unused-value',
@@ -420,7 +418,6 @@ class Board:
             errors = ['-Werror',
                       '-Werror=missing-declarations',
                       '-Werror=float-equal',
-                      '-Werror=undef',
                     ]
             env.CFLAGS += errors
             env.CXXFLAGS += errors
@@ -937,7 +934,6 @@ class esp32(Board):
             '-fno-inline-functions',
             '-mlongcalls',
         ]
-        env.CFLAGS.remove('-Werror=undef')
 
         env.CXXFLAGS += ['-mlongcalls',
                          '-Os',
@@ -953,7 +949,6 @@ class esp32(Board):
                          '-mlongcalls',
                          '-fno-threadsafe-statics',
                          '-DCYGWIN_BUILD']
-        env.CXXFLAGS.remove('-Werror=undef')
         env.CXXFLAGS.remove('-Werror=shadow')
 
 
